@@ -53,10 +53,12 @@ class Neutron(CirclePrototypes):#subclass of circles, for neutrons and other "mo
         self.timer = random.randint(lowtime, uptime)#time before neutron vanishes
         self.mag = 10#size of movement vector 
     def move(self):
-        self.xpos += (self.mag * math.cos(self.angle)) #determines motion
-        self.ypos += (self.mag * math.sin(self.angle))
+        if speedscalar != 0:
+            self.xpos += (self.mag * math.cos(self.angle)) #determines motion
+            self.ypos += (self.mag * math.sin(self.angle))
 def Operations(item, nuc, newtlist, chunklist, NEUTRON_SIZE, SUB_SIZE): #subroutine for interactions betwixt neutrons and nuclei
     global interact_count
+    global total_count
     global speedscalar
     dist = item.distcalc(nuc.xpos, nuc.ypos)
     if nuc.radius == NO_RADIUS:
@@ -88,7 +90,8 @@ def Operations(item, nuc, newtlist, chunklist, NEUTRON_SIZE, SUB_SIZE): #subrout
                 submunition1.angle = item.angle - (math.pi/2)
                 
             newtlist.append(submunition1)
-        interact_count += 1 #for the energy meter later in the code
+        interact_count += 1
+        total_count += 1#for the energy meter later in the code
         pygame.draw.circle(screen, (255,76,0), [item.xpos,item.ypos],100)#rudimentary explosion sfx
         if item in newtlist:
             newtlist.remove(item)
@@ -111,6 +114,16 @@ class Control_Rod(): #class for making control rods
         self.radius = NO_RADIUS #basically a unique identifier to make sure it gets ignored in any radius calculations (since it is a rectangle)
     def draw(self, screen):
         pygame.draw.rect(screen, (0, 0, 255), pygame.Rect((self.xpos - self.width/2), 0, self.width, self.height))
+def Tutorial_Message():
+    draw_text(screen, W - 320, H/6 + 5, 40, (255, 255, 0), "Tutorial")
+    draw_text(screen, W - 320, H/6 + 40, 30, (255, 255, 255), "0 to add rod")
+    draw_text(screen, W - 320, H/6 + 60, 30, (255, 255, 255), "1 to remove rod")
+    draw_text(screen, W - 320, H/6 + 80, 30, (255, 255, 255), "left arrow to slow time")
+    draw_text(screen, W - 320, H/6 + 100, 30, (255, 255, 255), "right arrow to speed up time")
+    draw_text(screen, W - 320, H/6 + 120, 30, (255, 255, 255), "down arrow to lower all rods")
+    draw_text(screen, W - 320, H/6 + 140, 30, (255, 255, 255), "up arrow to raise all rods")
+    draw_text(screen, W - 320, H/6 + 160, 30, (255, 255, 255), "P to pause/unpause")
+    draw_text(screen, W - 320, H/6 + 180, 30, (255, 255, 255), "BKSP to exit to menu")
 interact_count = 0 #this entire column is relevant variables for use in the main loop
 average = 0
 NO_RADIUS = 5000000
@@ -146,18 +159,20 @@ speedscalar = 1
 
 while preplay:
     if play == False:
-        screen.fill((BLACK))
+        screen.fill((0, 35, 35))
         draw_text(screen, W/6, H/2, 50, (255, 255, 255), "PRESS SPACE TO START THE SIMULATION, OR PRESS ESC TO EXIT")
         pygame.draw.circle(screen, (255, 0, 0), (W/8, H/6), 25)
         pygame.draw.circle(screen, (0, 255, 130), (W/8 + 75, H/6), 25)
-        pygame.draw.circle(screen, (0, 255, 0), (W/8 + 150, H/6), 25)
+        pygame.draw.circle(screen, (0, 255, 0), (W/8 + 150, H/6), 25)  
         pygame.draw.circle(screen, (255, 0, 255), (W/8 + 225, H/6), 7)
         pygame.draw.rect(screen, (0, 0, 255), pygame.Rect((W/8 - 105), H/6 - 25, 50, 50))
         draw_text(screen, W/8 - 20, H/6 + 35, 20, (255, 255, 255), "U-238")
         draw_text(screen, W/8 + 55, H/6 + 35, 20, (255, 255, 255), "Pu-239")
         draw_text(screen, W/8 + 130, H/6 + 35, 20, (255, 255, 255), "U-235")
-        draw_text(screen, W/8 +200, H/6 + 35, 20, (255, 255, 255), "Neutron")
+        draw_text(screen, W/8 + 200, H/6 + 35, 20, (255, 255, 255), "Neutron")
         draw_text(screen, W/8 - 117, H/6 + 35, 20, (255, 255, 255), "Control Rod")
+        Tutorial_Message()
+        
     for event in pygame.event.get():
 
         
@@ -193,6 +208,8 @@ while preplay:
             goingup = False
             goingdown = False
             speedscalar = 1
+            holding_var = 1
+            total_count = 0
             for i in range(7):
                 chunklist.append([[],[],[],[],[],[],[]]) #instantiation of the chunk list 
             i = 0
@@ -219,7 +236,7 @@ while preplay:
             play = False    
     while play:#main loop
         
-        screen.fill(BLACK)
+        screen.fill((0, 35, 35))
          
         for event in pygame.event.get():
             if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -283,6 +300,14 @@ while preplay:
                     speedscalar *= 2
                 for item in newtlist:
                     item.mag = 10 * speedscalar
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_p:
+                if speedscalar != 0:
+                    holding_var = speedscalar
+                    speedscalar = 0
+                    
+                else:
+                    speedscalar = holding_var
+            
                     
                 """if LOWER_TIME >= 5 and UPPER_TIME >= 205:
                     LOWER_TIME -= 10
@@ -294,7 +319,7 @@ while preplay:
         #colour = (50, (xpos/W) * 255, (ypos/H)*255) 
       
         clock.tick(fps) #makes the clock tick according to the fps
-        screen.fill(BLACK)
+        screen.fill((0, 35, 35))
         for item in control_list:
             if goingup and item. height >= 5:
                 item.height -= 5 * speedscalar
@@ -390,15 +415,22 @@ while preplay:
         #    newtlist.pop(0)
         if len(newtlist) == 0:
             #newtlist.append(Neutron((255, 0, 255), [random.randint(25, W), random.randint(1, H)], NEUTRON_SIZE, LOWER_TIME, UPPER_TIME)) # for debug, makes a new neutron if there are none left
-            draw_text(screen, W/4, H/2, 50, (255, 255, 255), "REACTION HALTED - PRESS N FOR NEW NEUTRON")    
+            draw_text(screen, W/4, H/2, 50, (255, 255, 255), "REACTION HALTED - PRESS N FOR NEW NEUTRON")
+        if speedscalar == 0:
+            draw_text(screen, W/2 - 67, H/2, 50, (255, 255, 255), "PAUSED")
+            string = ("Energy Released: "+ str(total_count*200)+ "MeV")
+            draw_text(screen, W - 450, 50, 40, (255, 255, 0), (string))
+            Tutorial_Message()
+            
         
         timer += 1
-        if timer >= (5 / speedscalar):
-            moving_average.append(interact_count) # handling of moving average for the energy meter
-            interact_count = 0
-            timer = 0
+        if speedscalar != 0:
+            if timer >= (5 / speedscalar):
+                moving_average.append(interact_count) # handling of moving average for the energy meter
+                interact_count = 0
+                timer = 0
         if len(moving_average) > 60:
-            while len(moving_average) > 60:
+            while len(moving_average) > 60 and speedscalar != 0:
                 moving_average.pop(0) #makes the moving average, well, move
             
         
@@ -419,7 +451,7 @@ while preplay:
             pygame.draw.rect(screen, (255, 0, 0),pygame.Rect(0, H - average * 50, 25, (average * 50)+5))#this little section manages the creation, size, and colour of the energy meter based on the moving average.
             if average * 50 >= H:
                 screen.fill((225, 76, 0))
-                draw_text(screen, W/4, H/2, 50, (255, 255, 255), "! REACTION EXCESSIVE - MELTDOWN IN PROGRESS !")
+                draw_text(screen, W/3 +80, H/2, 50, (255, 255, 255), "! NUCLEAR CATASTROPHE !")
                 pygame.display.update()
                 time.sleep(5)
                 play = False
@@ -428,30 +460,6 @@ while preplay:
         else:
             pygame.draw.rect(screen, (255, 125, 125),pygame.Rect(0, H - average * 50, 25, (average * 50)+5))
         pygame.draw.rect(screen, (255, 255, 255), pygame.Rect(22, 0, 3, H))
-       # if len(nuclist) < 50:
-        #    checkx = []
-        #    checky = []
-        #    i = len(nuclist)
-        #    while i < 50:
-         #       nucleus = CirclePrototypes((0, 255, 0), [random.randint(0, W), random.randint(0, H)], 25, (0, 0), 0)
-          #      if nucleus.xpos not in checkx and nucleus.ypos not in checky:
-            
-             #       nuclist.append(nucleus)
-               #     checkx.append(nucleus.xpos)
-               #     checky.append(nucleus.ypos)
-               #     i += 1
-            
-            
-        
-        
-      # dist = neutron.distcalc(secondx, secondy)
-     #   neutron.colour = (50,((dist/W)*255),((dist/H)*255))
-      #  pygame.draw.line(screen, neutron.colour, (neutron.xpos, neutron.ypos), (secondx, secondy))
-      #  if dist < neutron.radius + nucleus.radius:
-        #    neutron.vec = (0, 0)
-        #    neutron.colour = BLACK
-         #   screen.fill((255,125,125))
-            
 
             
         pygame.display.update()
